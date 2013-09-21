@@ -1,15 +1,19 @@
 {
     "name": "mcpruitt/file-queue",
-    "description": "",
+    "description": "File based queue for laravel 4.0.x",
     "authors": [
         {
-            "name": "",
-            "email": ""
+            "name": "Michael Pruitt",
+            "email": "mike@zoodia.com"
         }
     ],
     "require": {
         "php": ">=5.3.0",
-        "illuminate/support": "4.0.x"
+        "illuminate/support": "4.0.x",
+        "illuminate/queue": "4.0.x",
+        "symfony/filesystem": "2.4.x-dev",
+        "orchestra/testbench": "2.0.*",
+        "mockery/mockery": "dev-master"
     },
     "autoload": {
         "psr-0": {
