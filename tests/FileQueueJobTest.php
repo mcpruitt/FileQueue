@@ -10,18 +10,18 @@ class FileQueueJobTest extends TestCase {
   public function tearDown() { m::close(); }
 
   public function test_job_id_with_simple_name(){
-    $job = $this->_getJob("simplename", []);
+    $job = $this->_getJob("simplename", array());
     $this->assertStringStartsWith("job-simplename", $job->getJobId());
   }
 
   public function test_job_id_with_namespace_name(){
-    $job = $this->_getJob("\\Some\\Namespace\\Job", []);
+    $job = $this->_getJob("\\Some\\Namespace\\Job", array());
     $this->assertStringStartsWith("job-Some-Namespace-Job", $job->getJobId());
   }
 
   public function test_job_ends_in_microtime(){
     $testTime = microtime(true);
-    $job = $this->_getJob("simplename",[],$testTime);
+    $job = $this->_getJob("simplename",array(),$testTime);
     $this->assertStringEndsWith("{$testTime}", $job->getJobId());
   }
 
