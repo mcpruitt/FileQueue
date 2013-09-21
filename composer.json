@@ -1,0 +1,20 @@
+{
+    "name": "mcpruitt/file-queue",
+    "description": "",
+    "authors": [
+        {
+            "name": "",
+            "email": ""
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "illuminate/support": "4.0.x"
+    },
+    "autoload": {
+        "psr-0": {
+            "Mcpruitt\\FileQueue": "src/"
+        }
+    },
+    "minimum-stability": "dev"
+}
