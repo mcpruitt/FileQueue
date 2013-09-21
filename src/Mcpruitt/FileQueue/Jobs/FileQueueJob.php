@@ -87,7 +87,7 @@ class FileQueueJob extends Job {
     
     $this->due = microtime(true) + $delay;
     $id = $this->getJobId();
-    $contents = json_encode($this, JSON_PRETTY_PRINT);
+    $contents = json_encode($this);
 
     $regularPath = $this->_joinPaths(storage_path(), "FileQueue", $this->queue,"{$id}.json");
 

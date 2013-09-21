@@ -36,7 +36,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     $job =  new FileQueueJob($this->container, $job, $data, $jobDueAfter, $queue); 
     
     $filename = $this->joinPaths($this->_getQueueDirectory($queue), "{$job->getJobId()}.json");
-    $contents = json_encode($job, JSON_PRETTY_PRINT);    
+    $contents = json_encode($job);    
     \File::put($filename, $contents);
     return 0;
   }
