@@ -1,6 +1,7 @@
 <?php namespace Mcpruitt\FileQueue\Jobs;
 
 use \Closure;
+use \Mcpruitt\FileQueue\FileQueueUtil;
 use \Illuminate\Container\Container;
 use \Illuminate\Queue\Jobs\Job;
 
@@ -71,7 +72,7 @@ class FileQueueJob extends Job {
    */
   public function delete(){
     $id = $this->getJobId();
-    $path = $this->_joinPaths(storage_path(), "FileQueue", $this->queue, "inprocess","{$id}.json");
+    $path = FileQueueUtil::joinPaths(storage_path(), "FileQueue", $this->queue, "inprocess","{$id}.json");
     if(\File::exists($path)) \File::delete($path);
   }
 
@@ -83,13 +84,13 @@ class FileQueueJob extends Job {
    */
   public function release($delay = 0){
     $id = $this->getJobId();
-    $inProcessPath = $this->_joinPaths(storage_path(), "FileQueue", $this->queue, "inprocess","{$id}.json");    
+    $inProcessPath = FileQueueUtil::joinPaths(storage_path(), "FileQueue", $this->queue, "inprocess","{$id}.json");    
     
     $this->due = microtime(true) + $delay;
     $id = $this->getJobId();
     $contents = json_encode($this);
 
-    $regularPath = $this->_joinPaths(storage_path(), "FileQueue", $this->queue,"{$id}.json");
+    $regularPath = FileQueueUtil::joinPaths(storage_path(), "FileQueue", $this->queue,"{$id}.json");
 
     \File::put($regularPath, $contents);
     \File::delete($inProcessPath);
@@ -118,24 +119,5 @@ class FileQueueJob extends Job {
     $jobtype = str_replace("\\", "-", $jobtype);
     $jobtype = trim($jobtype, '-');
     return "job-{$jobtype}-{$this->due}";
-  }
-
-
-  /**
-   * Join a set of paths.
-   * 
-   * @example _joinPaths("c:/","temp","somefolder");
-   */
-  private function _joinPaths() {
-    $args = func_get_args();
-    $paths = array();
-    foreach ($args as $arg) {
-        $arg = str_replace("\\", "/", $arg);
-        $paths = array_merge($paths, (array)$arg);
-    }
-
-    $paths = array_map(create_function('$p', 'return trim($p, "/");'), $paths);
-    $paths = array_filter($paths);
-    return join('/', $paths);
   }
 }

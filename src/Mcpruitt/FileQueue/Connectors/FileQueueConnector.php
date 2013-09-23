@@ -3,7 +3,7 @@
 use \Illuminate\Queue\Connectors\ConnectorInterface;
 use \Mcpruitt\FileQueue\FileQueue;
 
-class AsyncFileQueueConnector implements ConnectorInterface {
+class FileQueueConnector implements ConnectorInterface {
 
   /**
    * Establish a queue connection.
@@ -13,6 +13,9 @@ class AsyncFileQueueConnector implements ConnectorInterface {
    */
   public function connect(array $config)
   {
+    // $directory = isset($config['dir']) && $config['dir'] !== null ?
+    //   $config['dir'] : 
+
     return new FileQueue();
   }
 }

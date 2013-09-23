@@ -1,12 +1,35 @@
 <?php namespace Mcpruitt\FileQueue;
 
+use \Mcpruitt\FileQueue\FileQueueUtil as U;
 use \Mcpruitt\FileQueue\Jobs\FileQueueJob;
 
 class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\QueueInterface {
 
-  public function __construct() {
-    $this->_setupQueueDirectory();
+  protected $_config = array();
+
+  protected $_defaultQueueName;
+
+  protected $_baseDirectory;
+
+  /**
+   * Create a new file queue with an optional configuration.
+   * @param array $config The configuration
+   */
+  public function __construct($config = array()) {
+    $this->_config = $config;
+    $this->setDefaultQueueName(U::getArrayValue($config, "defaultqueue", "default"));
+    $this->setBaseDirectory(U::getArrayValue($config,"directory",U::joinPaths(storage_path(),"FileQueue")));
   }
+
+  public function setDefaultQueueName($name) {
+    $this->_defaultQueueName = trim(U::joinPaths($name), '/'); 
+  }  
+
+  public function getDefaultQueueName(){ return $this->_defaultQueueName; }
+
+  public function setBaseDirectory($dir) { $this->_baseDirectory = U::joinPaths($dir); }
+
+  public function getBaseDirectory(){ return $this->_baseDirectory; }
 
   /**
    * Push a new job onto the queue.
@@ -35,7 +58,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
 
     $job =  new FileQueueJob($this->container, $job, $data, $jobDueAfter, $queue); 
     
-    $filename = $this->joinPaths($this->_getQueueDirectory($queue), "{$job->getJobId()}.json");
+    $filename = U::joinPaths($this->_getQueueDirectory($queue), "{$job->getJobId()}.json");
     $contents = json_encode($job);    
     \File::put($filename, $contents);
     return 0;
@@ -59,17 +82,17 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
       $ex = explode("-", $file);
       $last = (float)$ex[count($ex)-1];
       if($last <= $currentmicrotime) {        
-        $fullJobPath = $this->joinPaths($this->_getQueueDirectory($queue), $file);
+        $fullJobPath = U::joinPaths($this->_getQueueDirectory($queue), $file);
 
         $queueItem = json_decode(file_get_contents($fullJobPath));        
         $job = $queueItem->job;
         $data = $queueItem->data;
         
-        $processingDirectory = $this->joinPaths($this->_getQueueDirectory($queue), "inprocess");
+        $processingDirectory = U::joinPaths($this->_getQueueDirectory($queue), "inprocess");
         if(!\File::isDirectory($processingDirectory)) \File::mkdir($processingDirectory);
         
 
-        $inprocessFile = $this->joinPaths($processingDirectory, $file);
+        $inprocessFile = U::joinPaths($processingDirectory, $file);
         
         \File::move($fullJobPath, $inprocessFile);
         $job = new FileQueueJob($this->container, $queueItem->job, 
@@ -82,11 +105,20 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     }
   }
 
+  public function getStoragePath($queue = null){
+
+  }
+
+
+  protected function _getQueueName($name = null) { 
+    return $name == null ? $this->getDefaultQueueName() : U::joinPaths($name);
+  }
+
   /**
    * Setup the base queue directory and default queue folder.
    */
   protected function _setupQueueDirectory() {
-    $baseDirectory = $this->joinPaths(storage_path(), "FileQueue");
+    $baseDirectory = U::joinPaths(storage_path(), "FileQueue");
     if(!\File::isDirectory($baseDirectory)) \File::makeDirectory($baseDirectory);    
     $this->_createSpecificQueueDirectory("default");
   }
@@ -96,36 +128,21 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
    * @param  string $queue The folder to create
    */
   protected function _createSpecificQueueDirectory($queue) {
-    $queueDirectory = $this->joinPaths(storage_path(), "FileQueue", $queue);
+    $queueDirectory = U::joinPaths(storage_path(), "FileQueue", $queue);
     if(!\File::isDirectory($queueDirectory)) \File::makeDirectory($queueDirectory);
   }
 
   protected function _getQueueDirectory($queue = null) {
     $queue = $queue === null ? "default" : trim($queue);
-    return $this->joinPaths(storage_path(), "FileQueue", $queue);
+    return U::joinPaths(storage_path(), "FileQueue", $queue);
   }
 
   protected function _getFilenameForQueueItem($queueitem, $queue, $due) {
     $jobtype = $queueitem->job;
     $jobtype = str_replace("\\", "-", $jobtype);
     $filename = "job-{$jobtype}-{$due}.json";
-    return $this->joinPaths(storage_path(), "FileQueue", $queue, $filename);
+    return U::joinPaths(storage_path(), "FileQueue", $queue, $filename);
   }
 
-  /**
-   * Join a set of paths.
-   * @example joinPaths("c:/","temp","somefolder");
-   */
-  protected function joinPaths() {
-    $args = func_get_args();
-    $paths = array();
-    foreach ($args as $arg) {
-        $arg = str_replace("\\", "/", $arg);
-        $paths = array_merge($paths, (array)$arg);
-    }
 
-    $paths = array_map(create_function('$p', 'return trim($p, "/");'), $paths);
-    $paths = array_filter($paths);
-    return join('/', $paths);
-  }
 }
