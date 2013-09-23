@@ -1,14 +1,23 @@
 <?php
 use \Orchestra\Testbench\TestCase;
 use \Mcpruitt\FileQueue\Jobs\FileQueueJob;
+use \org\bovigo\vfs\vfsStream;
 use \Mockery as m;
 
 class FileQueueJobTest extends TestCase {
 
+  protected $_vfs;
+  
   public static $JobHanlderExampleVariableSet = false;
 
   public function tearDown() { m::close(); }
 
+  public function setUp(){
+    parent::setUp();
+    $this->_vfs = vfsStream::setup("FileQueueTest");
+  }
+
+  /*
   public function test_job_id_with_simple_name(){
     $job = $this->_getJob("simplename", array());
     $this->assertStringStartsWith("job-simplename", $job->getJobId());
@@ -24,7 +33,8 @@ class FileQueueJobTest extends TestCase {
     $job = $this->_getJob("simplename",array(),$testTime);
     $this->assertStringEndsWith("{$testTime}", $job->getJobId());
   }
-
+  */
+ 
   public function test_fire_increments_attempts(){
     $job = $this->_getJob(function(){});
     
@@ -50,32 +60,9 @@ class FileQueueJobTest extends TestCase {
     $this->assertTrue(self::$JobHanlderExampleVariableSet);
   }
 
-  public function test_deleting_the_job_deletes_the_file(){    
-    \File::shouldReceive("exists")->once()->with(m::any())->andReturn(true);
-    \File::shouldReceive("delete")->once()->with(m::any())->andReturnNull();
-    $job = $this->_getJob(function(){});
-    $job->delete();
-  }
-
-  public function test_release_moves_job_file_back(){
-    \File::shouldReceive("put")->once()->with(m::any(), m::any())->andReturnNull();
-    \File::shouldReceive("delete")->once()->with(m::any())->andreturnNull();
-    $job = $this->_getJob(function(){});
-    $job->release();
-  }
-
-  public function test_release_updates_job_due_time(){
-    \File::shouldReceive("put")->once()->with(m::any(), m::any())->andReturnNull();
-    \File::shouldReceive("delete")->once()->with(m::any())->andreturnNull();
-    $job = $this->_getJob(function(){});
-    $jobdue = $job->due;
-    $job->release(100);
-    $this->assertTrue($job->due > $jobdue + 100);
-  }
-
-  private function _getJob($jobName = "test", $jobData = null, $time = null, $queue = null) {
+  private function _getJob($jobName = "test", $jobData = "", $time = null, $queue = null) {
     $time = $time === null ? microtime(true) : $time;
-    return new FileQueueJob($this->app, $jobName,$jobData,$time,$queue);
+    return new FileQueueJob($this->app, $queue, $jobName, $jobData, $time);
   }
 }
 

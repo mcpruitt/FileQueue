@@ -19,11 +19,18 @@ class FileQueueUtil {
     $paths = array_filter($paths);
 
     $joined = join('/', $paths);
+    $prefix = "";
+
+    if(preg_match("/[a-zA-Z0-9]+\:\/\//", $joined, $regexoutput)) {
+      $prefix = substr($joined, 0, strlen($regexoutput[0]));
+      $joined = substr($joined,strlen($regexoutput[0]))  ;
+    }
+
     while(strpos($joined,"//") !== false) {
       $joined = str_replace("//", "/", $joined);
     }
 
-    return trim($joined) . "/";
+    return $prefix . trim($joined) . "/";
   }
   
   public static function getArrayValue($array, $key, $default = null) {
@@ -31,4 +38,11 @@ class FileQueueUtil {
     return isset($array[$key]) ? $array[$key] : $default;
   }
 
+  public static function getJobFilename($job, $date) {
+    if($job instanceof \Closure) $job = "IlluminateQueueClosure";    
+    $job = str_replace("\\", "-", $job);
+    $job = trim($job, '-');
+
+    return "job-{$job}-{$date}";
+  }
 }

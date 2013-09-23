@@ -13,9 +13,6 @@ class FileQueueConnector implements ConnectorInterface {
    */
   public function connect(array $config)
   {
-    // $directory = isset($config['dir']) && $config['dir'] !== null ?
-    //   $config['dir'] : 
-
-    return new FileQueue();
+    return new FileQueue($config);
   }
 }

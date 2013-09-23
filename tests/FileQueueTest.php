@@ -1,18 +1,24 @@
 <?php
 use \Orchestra\Testbench\TestCase;
 use \Mcpruitt\FileQueue\FileQueue;
+use \org\bovigo\vfs\vfsStream;
 use \Mockery as m;
 
 class FileQueueTest extends TestCase {
 
+  protected $_vfs;
+
   public function tearDown(){ m::close(); }
+
+  public function setUp(){
+    parent::setUp();
+    $this->_vfs = vfsStream::setup("FileQueueTest");
+  }
 
   public function test_default_folder(){
     $sut = new FileQueue();
-    
     $expectedPath = storage_path() . "/FileQueue/";
     $expectedPath = str_replace("\\", "/", $expectedPath);
-
     $this->assertSame($expectedPath,$sut->getBaseDirectory());
   }
 

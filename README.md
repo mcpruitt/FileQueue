@@ -26,3 +26,7 @@ Finally you'll need to add the new queue to your `app/config/queue.php` and add 
     'file' => array(
 	  'driver' => 'file'
     )
+
+### Job Serialization
+
+Jobs are serialized to JSON using `json_encode`. 

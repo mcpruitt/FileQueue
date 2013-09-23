@@ -21,15 +21,37 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     $this->setBaseDirectory(U::getArrayValue($config,"directory",U::joinPaths(storage_path(),"FileQueue")));
   }
 
+  /**
+   * Set the default queue name.
+   * @param string $name The default queue name
+   */
   public function setDefaultQueueName($name) {
     $this->_defaultQueueName = trim(U::joinPaths($name), '/'); 
   }  
 
-  public function getDefaultQueueName(){ return $this->_defaultQueueName; }
+  /**
+   * Get the default queue name.
+   * @return string The default queue name.
+   */
+  public function getDefaultQueueName(){ 
+    return $this->_defaultQueueName; 
+  }
 
-  public function setBaseDirectory($dir) { $this->_baseDirectory = U::joinPaths($dir); }
+  /**
+   * Set the base path for the queue.
+   * @param string $dir The base path for the queue.
+   */
+  public function setBaseDirectory($dir) { 
+    $this->_baseDirectory = U::joinPaths($dir); 
+  }
 
-  public function getBaseDirectory(){ return $this->_baseDirectory; }
+  /**
+   * Get the base path for the queue.
+   * @return string The base path for the queue.
+   */
+  public function getBaseDirectory(){ 
+    return $this->_baseDirectory; 
+  }
 
   /**
    * Push a new job onto the queue.
@@ -53,14 +75,25 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
    * @return mixed
    */
   public function later($delay, $job, $data = '', $queue = null) {
+    // Get the queue name
     $queue = $queue === null ? "default" : trim($queue);
-    $jobDueAfter = microtime(true) + $delay;
 
-    $job =  new FileQueueJob($this->container, $job, $data, $jobDueAfter, $queue); 
-    
-    $filename = U::joinPaths($this->_getQueueDirectory($queue), "{$job->getJobId()}.json");
-    $contents = json_encode($job);    
-    \File::put($filename, $contents);
+    // Calculate when the job is due
+    $jobDueAfter = microtime(true) + $this->getSeconds($delay);
+
+    // Create the payload
+    $payload = $this->createPayload($job, $data);
+
+
+    $jobFilename = U::getJobFilename($job, $jobDueAfter);
+
+    // Get the filename
+    $filename = rtrim(U::joinPaths($this->_getQueueDirectory($queue, true),  "{$jobFilename}.json"),'/');
+
+
+    // Save the job
+    \File::put($filename, $payload);
+
     return 0;
   }
 
@@ -71,78 +104,53 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
    * @return \Illuminate\Queue\Jobs\Job|null
    */
   public function pop($queue = null) {
+    $queue = $queue === null ? "default":$queue;
     $currentmicrotime = microtime(true);
-
-    $allfiles = scandir($this->_getQueueDirectory($queue));
+    $allfiles = scandir($this->_getQueueDirectory($queue,true));
     foreach($allfiles as $index => $file) {
       if(strlen($file) < 5 || substr($file, -5) !== ".json") unset($allfiles[$index]);
     }
     
+
     foreach($allfiles as $file) {
       $ex = explode("-", $file);
       $last = (float)$ex[count($ex)-1];
       if($last <= $currentmicrotime) {        
-        $fullJobPath = U::joinPaths($this->_getQueueDirectory($queue), $file);
+        $fullJobPath = trim(U::joinPaths($this->_getQueueDirectory($queue), $file),'/');
 
-        $queueItem = json_decode(file_get_contents($fullJobPath));        
+        $queueItem = json_decode(file_get_contents($fullJobPath));
+        
+        
         $job = $queueItem->job;
         $data = $queueItem->data;
         
         $processingDirectory = U::joinPaths($this->_getQueueDirectory($queue), "inprocess");
-        if(!\File::isDirectory($processingDirectory)) \File::mkdir($processingDirectory);
+        if(!\File::isDirectory($processingDirectory)) \File::makeDirectory($processingDirectory,0777, true);
         
 
         $inprocessFile = U::joinPaths($processingDirectory, $file);
         
         \File::move($fullJobPath, $inprocessFile);
-        $job = new FileQueueJob($this->container, $queueItem->job, 
-                                     $queueItem->data, $queueItem->due,
-                                     $queueItem->queue);
-        
-        $job->tries = $queueItem->tries;
+
+        // Container $c, $jobQueue, $jobName, $jobData, $dueDate
+        $job = new FileQueueJob($this->container, 
+                                  $queue,
+                                  $job,
+                                  $data,
+                                  $last,
+                                  $processingDirectory);
+        //$job->tries = $queueItem->tries;
         return $job;
       }
     }
   }
 
-  public function getStoragePath($queue = null){
-
-  }
-
-
-  protected function _getQueueName($name = null) { 
-    return $name == null ? $this->getDefaultQueueName() : U::joinPaths($name);
-  }
-
-  /**
-   * Setup the base queue directory and default queue folder.
-   */
-  protected function _setupQueueDirectory() {
-    $baseDirectory = U::joinPaths(storage_path(), "FileQueue");
-    if(!\File::isDirectory($baseDirectory)) \File::makeDirectory($baseDirectory);    
-    $this->_createSpecificQueueDirectory("default");
-  }
-
-  /**
-   * Create a folder for a specific queue.
-   * @param  string $queue The folder to create
-   */
-  protected function _createSpecificQueueDirectory($queue) {
-    $queueDirectory = U::joinPaths(storage_path(), "FileQueue", $queue);
-    if(!\File::isDirectory($queueDirectory)) \File::makeDirectory($queueDirectory);
-  }
-
-  protected function _getQueueDirectory($queue = null) {
+  protected function _getQueueDirectory($queue = null, $createIfMissing = false) {
     $queue = $queue === null ? "default" : trim($queue);
-    return U::joinPaths(storage_path(), "FileQueue", $queue);
+    $path = U::joinPaths($this->getBaseDirectory(), $queue);
+    if($createIfMissing && !\File::isDirectory($path)) {
+      \File::makeDirectory($path, 0770, true);
+    }
+    return $path;
   }
-
-  protected function _getFilenameForQueueItem($queueitem, $queue, $due) {
-    $jobtype = $queueitem->job;
-    $jobtype = str_replace("\\", "-", $jobtype);
-    $filename = "job-{$jobtype}-{$due}.json";
-    return U::joinPaths(storage_path(), "FileQueue", $queue, $filename);
-  }
-
-
 }
