@@ -19,13 +19,14 @@ class FileQueueJob extends Job {
 
   protected $storage_path;
 
-  public function __construct(Container $c, $jobQueue, $jobName, $jobData, $dueDate, $storagePath = null) {
-    $this->container  = $c;
-    $this->job_name   = $jobName;
-    $this->job_data   = $jobData;
-    $this->queue_name = $jobQueue;
-    $this->due_date   = $dueDate;
+  public function __construct(Container $c, $jobQueue, $jobName, $jobData, $dueDate, $storagePath = null, $attempts = 0) {
+    $this->container    = $c;
+    $this->job_name     = $jobName;
+    $this->job_data     = $jobData;
+    $this->queue_name   = $jobQueue;
+    $this->due_date     = $dueDate;
     $this->storage_path = $storagePath;
+    $this->job_attempts = $attempts;
   }
 
   public function fire() {
@@ -48,9 +49,9 @@ class FileQueueJob extends Job {
    * @return void
    */
   public function delete(){
-    $id = U::getJobFilename($this->job_name, $this->due_date);
+    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
     $inProcessPath = $this->storage_path;
-    $currentPath = rtrim(U::joinPaths($inProcessPath, $id . ".json"),'/');
+    $currentPath = rtrim(U::joinPaths($inProcessPath, $id),'/');
     \File::delete($currentPath);
   }
 
@@ -61,16 +62,18 @@ class FileQueueJob extends Job {
    * @return void
    */
   public function release($delay = 0){
-    $startingId = U::getJobFilename($this->job_name, $this->due_date);
+
+    $startingId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
 
     $inProcessPath = $this->storage_path;
-    $currentPath = rtrim(U::joinPaths($inProcessPath, $startingId . ".json"),'/');
+    $currentPath = rtrim(U::joinPaths($inProcessPath, $startingId),'/');
 
     $regularPath = substr($inProcessPath, 0, strlen($inProcessPath) - strlen("inprocess/"));
 
+    
 
     $this->due_date = microtime(true) + $delay;
-    $id = U::getJobFilename($this->job_name, $this->due_date);
+    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts());
     $outputPath = $regularPath . $id . ".json";
 
     \File::move($currentPath, $outputPath);

@@ -11,6 +11,8 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
 
   protected $_baseDirectory;
 
+  protected $_jobNameRegex = "/job\-(?<jobname>.*)\-(?<jobdue>[0-9]+\.[0-9]+)\-(?<jobattempts>[0-9]*)\.json/";
+
   /**
    * Create a new file queue with an optional configuration.
    * @param array $config The configuration
@@ -88,8 +90,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     $jobFilename = U::getJobFilename($job, $jobDueAfter);
 
     // Get the filename
-    $filename = rtrim(U::joinPaths($this->_getQueueDirectory($queue, true),  "{$jobFilename}.json"),'/');
-
+    $filename = rtrim(U::joinPaths($this->_getQueueDirectory($queue, true),  "{$jobFilename}"),'/');
 
     // Save the job
     \File::put($filename, $payload);
@@ -113,35 +114,26 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     
 
     foreach($allfiles as $file) {
-      $ex = explode("-", $file);
-      $last = (float)$ex[count($ex)-1];
-      if($last <= $currentmicrotime) {        
-        $fullJobPath = trim(U::joinPaths($this->_getQueueDirectory($queue), $file),'/');
+      preg_match($this->_jobNameRegex, $file, $matches);
+      $due = (float)$matches['jobdue'];
+      $attempts = (int)$matches['jobattempts'];
 
-        $queueItem = json_decode(file_get_contents($fullJobPath));
-        
-        
-        $job = $queueItem->job;
-        $data = $queueItem->data;
-        
-        $processingDirectory = U::joinPaths($this->_getQueueDirectory($queue), "inprocess");
-        if(!\File::isDirectory($processingDirectory)) \File::makeDirectory($processingDirectory,0777, true);
-        
+      if($due > $currentmicrotime) continue;
 
-        $inprocessFile = U::joinPaths($processingDirectory, $file);
-        
-        \File::move($fullJobPath, $inprocessFile);
+      $fullJobPath = trim(U::joinPaths($this->_getQueueDirectory($queue), $file),'/');
+      $queueItem = json_decode(file_get_contents($fullJobPath));
 
-        // Container $c, $jobQueue, $jobName, $jobData, $dueDate
-        $job = new FileQueueJob($this->container, 
-                                  $queue,
-                                  $job,
-                                  $data,
-                                  $last,
-                                  $processingDirectory);
-        //$job->tries = $queueItem->tries;
-        return $job;
-      }
+      $job = $queueItem->job;
+      $data = $queueItem->data;
+        
+      $processingDirectory = U::joinPaths($this->_getQueueDirectory($queue), "inprocess");
+      if(!\File::isDirectory($processingDirectory)) \File::makeDirectory($processingDirectory,0777, true);
+
+      $inprocessFile = rtrim(U::joinPaths($processingDirectory, $file),'/');
+
+      \File::move($fullJobPath, $inprocessFile);
+      $job = new FileQueueJob($this->container, $queue, $job, $data, $due, $processingDirectory, $attempts);
+      return $job;    
     }
   }
 

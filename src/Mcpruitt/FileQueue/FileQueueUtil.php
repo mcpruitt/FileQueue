@@ -38,11 +38,11 @@ class FileQueueUtil {
     return isset($array[$key]) ? $array[$key] : $default;
   }
 
-  public static function getJobFilename($job, $date) {
+  public static function getJobFilename($job, $date, $attempts = 0, $suffix = ".json") {
     if($job instanceof \Closure) $job = "IlluminateQueueClosure";    
     $job = str_replace("\\", "-", $job);
     $job = trim($job, '-');
 
-    return "job-{$job}-{$date}";
+    return "job-{$job}-{$date}-{$attempts}{$suffix}";
   }
 }

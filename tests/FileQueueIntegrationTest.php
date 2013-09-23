@@ -11,6 +11,8 @@ use \Mockery as m;
 
 class FileQueueIntegrationTest extends TestCase {
 
+  protected $_jobNameRegex = "/job\-(?<jobname>.*)\-(?<jobdue>[0-9]+\.[0-9]+)\-(?<jobattempts>[0-9]*)\.json/";
+
   public static $JobHanlderExampleVariableSet = false;
 
   public function tearDown() { m::close(); }
@@ -74,9 +76,9 @@ class FileQueueIntegrationTest extends TestCase {
     // Act
     \Queue::push(function(){}, array());    
     $jsonFiles = File::allFiles($baseDir);
-
+    
     // Assert
-    $this->assertRegExp("/job\-(.*)\-([0-9]+\.[0-9]+)\.json/", $jsonFiles[0]->getFileName());
+    $this->assertRegExp($this->_jobNameRegex, $jsonFiles[0]->getFileName());
   }
 
   public function test_inprocess_folder_is_not_created_from_push(){
@@ -85,6 +87,7 @@ class FileQueueIntegrationTest extends TestCase {
   }
 
   public function test_job_is_moved_during_processing(){
+
     \Queue::push(function($job) use (&$inprocess) {}, array());
 
     $job = \Queue::pop();
@@ -106,6 +109,7 @@ class FileQueueIntegrationTest extends TestCase {
     $this->assertEquals(1, $this->fileCountInVfsDirectory("root/custom-base-dir/default"));
     $job = \Queue::pop();
     $this->assertEquals(0, $this->fileCountInVfsDirectory("root/custom-base-dir/default"));
+
     $job->fire();
     $this->assertEquals(1, $this->fileCountInVfsDirectory("root/custom-base-dir/default"));
   }
@@ -138,13 +142,13 @@ class FileQueueIntegrationTest extends TestCase {
     $job = \Queue::pop();
     
     $first = $this->firstFile("root/custom-base-dir/default/inprocess");
-    preg_match("/job\-(.*)\-([0-9]+\.[0-9]+)\.json/", $first, $m);
+    preg_match($this->_jobNameRegex, $first, $m);
     $first_timestamp = (float)$m[2];
 
     $job->fire();
     
     $second = $this->firstFile("root/custom-base-dir/default/");
-    preg_match("/job\-(.*)\-([0-9]+\.[0-9]+)\.json/", $second, $m);    
+    preg_match($this->_jobNameRegex, $second, $m);    
     $second_timestamp = (float)$m[2];
 
     // Assert
@@ -152,25 +156,51 @@ class FileQueueIntegrationTest extends TestCase {
   }
 
   public function test_releasing_without_delay_updates_filename(){
+    // Arrange
     \Queue::push(function($job){ $job->release(); },array());    
-    $start = microtime(true);
-
+    
     // Act
     $job = \Queue::pop();
     
     $first = $this->firstFile("root/custom-base-dir/default/inprocess");
-    preg_match("/job\-(.*)\-([0-9]+\.[0-9]+)\.json/", $first, $m);
+    preg_match($this->_jobNameRegex, $first, $m);
     $first_timestamp = (float)$m[2];
 
     $job->fire();
 
     $second = $this->firstFile("root/custom-base-dir/default/");
-    preg_match("/job\-(.*)\-([0-9]+\.[0-9]+)\.json/", $second, $m);    
+    preg_match($this->_jobNameRegex, $second, $m);    
     $second_timestamp = (float)$m[2];
 
     // Assert
     $this->assertNotSame($first_timestamp, $second_timestamp);
   }
+
+  public function test_attempts_are_updated(){
+    \Queue::push(function($job){}, array());
+
+    $job = \Queue::pop();
+    $this->assertEquals(0, $job->attempts());
+
+    $job->fire();
+    $this->assertEquals(1, $job->attempts());
+
+    $job->fire();
+    $this->assertEquals(2, $job->attempts());    
+  }
+
+
+  public function test_attempts_are_preserved(){
+    \Queue::push(function($job){ $job->release(); }, array());
+    $job = \Queue::pop();
+
+    $job->fire();
+    $this->assertEquals(1, $job->attempts());
+
+    $job = \Queue::pop();
+    $this->assertEquals(1, $job->attempts());
+  }
+
 
   private function fileCountInVfsDirectory($dir) {
     $all = scandir(vfsStream::url($dir));
