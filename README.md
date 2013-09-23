@@ -2,6 +2,8 @@ FileQueue
 =========
 [![Build Status](https://travis-ci.org/mcpruitt/FileQueue.png?branch=master)](https://travis-ci.org/mcpruitt/FileQueue)
 
+**Note: This project is curntly under heavy development and should not be used!**
+
 A simple queue implementation for [laravel 4](https://github.com/laravel/laravel) that works with the filesystem. This can be used during development or when performance is not a concern (such as interacting with intermittent third party services).
 
 ## Installation
