@@ -1,7 +1,7 @@
 <?php namespace Mcpruitt\FileQueue;
 
 use Illuminate\Support\ServiceProvider;
-use \Mcpruitt\Queue\Connectors\FileQueueConnector;
+use \Mcpruitt\FileQueue\Connectors\FileQueueConnector;
 
 class FileQueueServiceProvider extends ServiceProvider {
 
@@ -19,6 +19,10 @@ class FileQueueServiceProvider extends ServiceProvider {
 	 */
 	public function register()
 	{
+		
+	}
+
+	public function boot(){
 		\App::make('queue')->addConnector("file", function() {
       return new FileQueueConnector();
     });
