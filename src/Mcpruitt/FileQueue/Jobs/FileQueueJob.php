@@ -19,6 +19,8 @@ class FileQueueJob extends Job {
 
   protected $storage_path;
 
+  protected $bubble_exceptions = false;
+
   public function __construct(Container $c, $jobQueue, $jobName, $jobData, $dueDate, $storagePath = null, $attempts = 0) {
     $this->container    = $c;
     $this->job_name     = $jobName;
@@ -29,17 +31,28 @@ class FileQueueJob extends Job {
     $this->job_attempts = $attempts;
   }
 
+  public function setBubbleExceptions($val ){
+    $this->bubble_exceptions = $val;
+  }
+
+  public function getBubbleExceptions(){ return $this->bubble_exceptions; }
+
   public function fire() {
     $this->job_attempts++;
-
-    if ($this->job_name instanceof Closure) {
-      call_user_func($this->job_name, $this, $this->job_data);
-    } else {
-      $payload = array(
-        'job'  => $this->job_name, 
-        'data' => (array)$this->job_data
-      );
-      $this->resolveAndFire($payload);
+    try {
+      if ($this->job_name instanceof Closure) {
+        call_user_func($this->job_name, $this, $this->job_data);
+      } else {
+        $payload = array(
+          'job'  => $this->job_name, 
+          'data' => (array)$this->job_data
+        );
+        $this->resolveAndFire($payload);
+      }
+    } catch (\Exception $e) {
+      //\Log::info("Exception encountered during queued job processing. Placing job back in queue. Attempt number: {$this->job_attempts}.", array($e));
+      $this->release($this->job_attempts * $this->job_attempts);
+      if($this->bubble_exceptions) throw $e;
     }
   }
 
@@ -49,10 +62,16 @@ class FileQueueJob extends Job {
    * @return void
    */
   public function delete(){
-    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
+    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts());
+    $previousId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
+
     $inProcessPath = $this->storage_path;
+    
     $currentPath = rtrim(U::joinPaths($inProcessPath, $id),'/');
-    \File::delete($currentPath);
+    if(\File::isFile($currentPath)) \File::delete($currentPath);
+
+    $currentPath = rtrim(U::joinPaths($inProcessPath, $previousId),'/');
+    if(\File::isFile($currentPath)) \File::delete($currentPath);
   }
 
   /**
@@ -62,9 +81,7 @@ class FileQueueJob extends Job {
    * @return void
    */
   public function release($delay = 0){
-
-    $startingId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
-
+    $startingId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);    
     $inProcessPath = $this->storage_path;
     $currentPath = rtrim(U::joinPaths($inProcessPath, $startingId),'/');
 
@@ -74,7 +91,8 @@ class FileQueueJob extends Job {
 
     $this->due_date = microtime(true) + $delay;
     $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts());
-    $outputPath = $regularPath . $id . ".json";
+
+    $outputPath = $regularPath . $id;
 
     \File::move($currentPath, $outputPath);
   }

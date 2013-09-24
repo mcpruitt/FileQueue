@@ -20,7 +20,6 @@ class FileQueueIntegrationTest extends TestCase {
   public function setUp(){
     vfsStream::setup("root");    
     parent::setUp();
-    //vfsStream::inspect(new vfsStreamPrintVisitor());
   }
 
   protected function getPackageProviders() {
@@ -115,11 +114,14 @@ class FileQueueIntegrationTest extends TestCase {
   }
 
   public function test_deleting_a_job_removes_the_file(){
-    \Queue::push(function($job){ $job->delete(); },array());
+    \Queue::push(function($job){
+      $job->delete();
+    }, array());
     $job = \Queue::pop();
     $this->assertEquals(1, $this->fileCountInVfsDirectory("root/custom-base-dir/default/inprocess"));
     $job->fire();
-    $this->assertEquals(0, $this->fileCountInVfsDirectory("root/custom-base-dir/default/inprocess"));
+    $this->assertEquals(0, $this->fileCountInVfsDirectory("root/custom-base-dir/default/inprocess"),
+                        "After firing the job delete is called and it should be removed.");
   }
 
   public function test_pop_only_takes_one_job(){
@@ -195,12 +197,42 @@ class FileQueueIntegrationTest extends TestCase {
     $job = \Queue::pop();
 
     $job->fire();
-    $this->assertEquals(1, $job->attempts());
+    $this->assertEquals(1, $job->attempts(), "Job should have 1 attempt after firing.");
 
     $job = \Queue::pop();
-    $this->assertEquals(1, $job->attempts());
+    $this->assertEquals(1, $job->attempts(), "Job should retain the 1 attempt after firing.");
   }
 
+  public function test_bubble_exceptions(){
+    $this->app['queue']->setBubbleExceptions(false);
+    $exceptionThrown = false;
+    \Queue::push(function($job){
+      throw new \Exception("Hello World");
+    });
+
+    $job = \Queue::pop();
+    try {
+      $job->fire();
+    } catch(\Exception $e) {
+      $exceptionThrown = true;
+    }
+    $this->assertFalse($exceptionThrown);
+  }
+
+  public function test_bubble_exceptions_enabled() {
+    $this->app['queue']->setBubbleExceptions(true);
+    $exceptionThrown = false;
+    \Queue::push(function($job){
+      throw new \Exception("My Exception");
+    });
+    $job = \Queue::pop();
+    try {
+      $job->fire();
+    } catch(Exception $e) {
+      $exceptionThrown = true;
+    }
+    $this->assertTrue($exceptionThrown);
+  }
 
   private function fileCountInVfsDirectory($dir) {
     $all = scandir(vfsStream::url($dir));

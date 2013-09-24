@@ -11,6 +11,8 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
 
   protected $_baseDirectory;
 
+  protected $_bubbleExceptions;
+
   protected $_jobNameRegex = "/job\-(?<jobname>.*)\-(?<jobdue>[0-9]+\.[0-9]+)\-(?<jobattempts>[0-9]*)\.json/";
 
   /**
@@ -21,6 +23,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     $this->_config = $config;
     $this->setDefaultQueueName(U::getArrayValue($config, "defaultqueue", "default"));
     $this->setBaseDirectory(U::getArrayValue($config,"directory",U::joinPaths(storage_path(),"FileQueue")));
+    $this->setBubbleExceptions(U::getArrayValue($config,"bubbleexceptions", true));
   }
 
   /**
@@ -54,6 +57,16 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
   public function getBaseDirectory(){ 
     return $this->_baseDirectory; 
   }
+
+
+  public function setBubbleExceptions($val ){
+    $this->_bubbleExceptions = $val;
+  }
+
+  public function getBubbleExceptions(){ 
+    return $this->_bubbleExceptions; 
+  }
+
 
   /**
    * Push a new job onto the queue.
@@ -133,6 +146,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
 
       \File::move($fullJobPath, $inprocessFile);
       $job = new FileQueueJob($this->container, $queue, $job, $data, $due, $processingDirectory, $attempts);
+      $job->setBubbleExceptions($this->_bubbleExceptions);
       return $job;    
     }
   }
