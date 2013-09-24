@@ -27,6 +27,30 @@ Finally you'll need to add the new queue to your `app/config/queue.php` and add 
 	  'driver' => 'file'
     )
 
-### Job Serialization
+## Configuration Options
 
-Jobs are serialized to JSON using `json_encode`. 
+**driver** - This is the driver for the queue. This should be set to `file`.
+
+**directory** - (default: `storage\FileQueue`) - This is the directory where job files should be stored.
+
+**defaultqueue** (default: `default`) - This is the name of the default queue to place jobs under.
+
+**bubleexceptions** (default: `false`) - If `true` exceptions that are thrown when a job is fired will be allowed to bubble up. If `false` exceptions will be caught and logged and the job will be released (with an incremented attempt count). 
+
+##### Example of default configuration:
+
+    'file' => array(
+	  'driver' => 'file',
+	  'directory' => null,
+      'defaultqueue' => 'default',
+      'bubbleexceptions' => false
+    )
+
+## Directory Structure
+
+By default the queue stores its job files in the `storage\FileQueue` folder. This folder can be overridden by specifying the `directory` option when configuring the queue. Within this directory another folder will be created for each queue name encountered (i.e. default). Within the name folder an inprocess folder will be created which holds jobs out of the standard queue folder while they are being processed. 
+
+## Job File Names
+
+Job files are named in a uniform manner: `job-[JobName]-[TimeStamp]-[AttemptCount].json` i.e. `job-MyQueuedJob-12700000.0001-0.json`
+
