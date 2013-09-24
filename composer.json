@@ -2,7 +2,6 @@
     "name": "mcpruitt/file-queue",
     "description": "File based queue for laravel 4.0.x",
     "license":"MIT",
-    "version":"0.0.1-dev",
     "keywords":["larvel"],
     "authors": [
         {
