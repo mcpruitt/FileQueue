@@ -1,6 +1,7 @@
 FileQueue
 =========
-[![Latest Stable Version](https://poser.pugx.org/mcpruitt/file-queue/version.png)](https://packagist.org/packages/mcpruitt/file-queue) 
+[![Latest Stable Version](https://poser.pugx.org/mcpruitt/file-queue/v/stable.png)](https://packagist.org/packages/mcpruitt/file-queue) 
+[![Latest Unstable Version](https://poser.pugx.org/mcpruitt/file-queue/v/unstable.png)](https://packagist.org/packages/mcpruitt/file-queue) 
 [![Total Downloads](https://poser.pugx.org/mcpruitt/file-queue/d/total.png)](https://packagist.org/packages/mcpruitt/file-queue) 
 [![Build Status](https://travis-ci.org/laravel/framework.png)](https://travis-ci.org/mcpruitt/file-queue)
 
