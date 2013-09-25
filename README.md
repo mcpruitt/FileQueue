@@ -1,6 +1,8 @@
 FileQueue
 =========
-[![Build Status](https://travis-ci.org/mcpruitt/FileQueue.png?branch=master)](https://travis-ci.org/mcpruitt/FileQueue)
+[![Latest Stable Version](https://poser.pugx.org/mcpruitt/file-queue/version.png)](https://packagist.org/packages/laravel/framework) 
+[![Total Downloads](https://poser.pugx.org/mcpruitt/file-queue/d/total.png)](https://packagist.org/packages/laravel/framework) 
+[![Build Status](https://travis-ci.org/laravel/framework.png)](https://travis-ci.org/laravel/framework)
 
 **Note: This project is currently under heavy development and should not be used!**
 
