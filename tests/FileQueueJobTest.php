@@ -60,6 +60,11 @@ class FileQueueJobTest extends TestCase {
     $this->assertTrue(self::$JobHanlderExampleVariableSet);
   }
 
+  public function test_get_due_date_returns_timestamp(){
+    $job = $this->_getJob(function(){});
+    $this->assertLessThan(microtime(true), $job->getDue());
+  }
+
   private function _getJob($jobName = "test", $jobData = "", $time = null, $queue = null) {
     $time = $time === null ? microtime(true) : $time;
     return new FileQueueJob($this->app, $queue, $jobName, $jobData, $time);
