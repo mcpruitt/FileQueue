@@ -4,7 +4,7 @@ FileQueue (Laravel4 Package)
 [![Latest Unstable Version](https://poser.pugx.org/mcpruitt/file-queue/v/unstable.png)](https://packagist.org/packages/mcpruitt/file-queue)
 [![Total Downloads](https://poser.pugx.org/mcpruitt/file-queue/d/total.png)](https://packagist.org/packages/mcpruitt/file-queue)
 [![Build Status](https://travis-ci.org/laravel/framework.png)](https://travis-ci.org/mcpruitt/file-queue)
-[![ProjectStatus](http://stillmaintained.com/mcpruitt/filequeue.png)](http://stillmaintained.com/mcpruitt/filequeue)
+[![ProjectStatus](http://stillmaintained.com/mcpruitt/FileQueue.png)](http://stillmaintained.com/mcpruitt/FileQueue)
 
 A simple queue implementation for [laravel 4](https://github.com/laravel/laravel) that works with the filesystem. This can be used during development or when performance is not a concern (such as interacting with intermittent third party services).
 
