@@ -155,6 +155,7 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
       $job->setBubbleExceptions($this->_bubbleExceptions);
       return $job;    
     }
+    return null;
   }
 
   protected function _getQueueDirectory($queue = null, $createIfMissing = false) {

@@ -50,4 +50,15 @@ class FileQueueTest extends TestCase {
     $sut->setDefaultQueueName("invalid>chars");
     $this->assertSame("invalidchars", $sut->getDefaultQueueName());
   }
+
+  public function test_pop_gives_null_if_no_jobs_exist(){
+    $sut = new FileQueue();
+    $this->assertSame(null, $sut->pop());
+  }
+
+  public function test_pop_does_not_get_future_jobs(){
+    $sut = new FileQueue();
+    $sut->later(1000000, function(){}, array());
+    $this->assertSame(null, $sut->pop());
+  }
 }
