@@ -5,14 +5,14 @@ use \Mcpruitt\FileQueue\FileQueue;
 
 class FileQueueConnector implements ConnectorInterface {
 
-  /**
-   * Establish a queue connection.
-   *
-   * @param  array  $config
-   * @return \Illuminate\Queue\QueueInterface
-   */
-  public function connect(array $config)
-  {
-    return new FileQueue($config);
-  }
+    /**
+     * Establish a queue connection.
+     *
+     * @param    array    $config
+     * @return \Illuminate\Queue\QueueInterface
+     */
+    public function connect(array $config)
+    {
+        return new FileQueue($config);
+    }
 }
