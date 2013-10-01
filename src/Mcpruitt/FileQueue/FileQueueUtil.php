@@ -3,6 +3,11 @@ namespace Mcpruitt\FileQueue;
 
 class FileQueueUtil
 {
+    /**
+     * Join multiple parts into a single file path.
+     * @example joinPaths("dira","dirb","dirc");
+     * @return string THe path
+     */
     public static function joinPaths()
     {
         $badChars = array("\\","*","?","\"","<",">","|");
@@ -35,6 +40,13 @@ class FileQueueUtil
         return $prefix . trim($joined) . "/";
     }
 
+    /**
+     * Get a value out of an array or return the default if it is missing.
+     * @param  array $array   The array
+     * @param  string $key     The key
+     * @param  mixed $default The value to return if the key is not found
+     * @return mixed          The value of the key in the array
+     */
     public static function getArrayValue($array, $key, $default = null)
     {
         if ($array == null || $key == null) {
@@ -43,6 +55,14 @@ class FileQueueUtil
         return isset($array[$key]) ? $array[$key] : $default;
     }
 
+    /**
+     * Get the filename for a job.
+     * @param  mixed  $job      The string or closure job.
+     * @param  int  $date     The timestamp
+     * @param  integer $attempts The number of attempts made at this job
+     * @param  string  $suffix   The suffix for the file
+     * @return string            The job name
+     */
     public static function getJobFilename($job, $date, $attempts = 0,
                                           $suffix = ".json")
     {

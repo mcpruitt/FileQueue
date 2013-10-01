@@ -72,12 +72,21 @@ class FileQueue extends \Illuminate\Queue\Queue
         return $this->_baseDirectory;
     }
 
-
+    /**
+     * Set the value indicating if exceptions during job processing should
+     * bubble up.
+     * @param bool $val Should exceptions bubble up
+     */
     public function setBubbleExceptions($val)
     {
         $this->_bubbleExceptions = $val;
     }
 
+    /**
+     * Get the value indicating if exceptions during job processing should
+     * bubble up.
+     * @return bool Will exceptions bubble up
+     */
     public function getBubbleExceptions()
     {
         return $this->_bubbleExceptions;
@@ -168,6 +177,11 @@ class FileQueue extends \Illuminate\Queue\Queue
         return null;
     }
 
+    /**
+     * Get a list of files for a given queue.
+     * @param  string $queue The queue
+     * @return array        An array of filenames
+     */
     protected function getFilesForQueue($queue = null) {
         $allfiles = scandir($this->getQueueDirectory($queue, true));
         foreach ($allfiles as $index => $file) {
@@ -178,6 +192,12 @@ class FileQueue extends \Illuminate\Queue\Queue
         return $allfiles;
     }
 
+    /**
+     * Move a file into the inprocess directory.
+     * @param  string $file  The filename
+     * @param  string $queue The queue the file belongs to
+     * @return void
+     */
     protected function moveFileToInProcessDirectory($file, $queue = null) {
         $jobPath = $this->getFullPathToQueueJob($file, $queue);
 
@@ -186,17 +206,35 @@ class FileQueue extends \Illuminate\Queue\Queue
         \File::move($jobPath, $inprocessFile);
     }
 
+    /**
+     * Deocde a file from the queue.
+     * @param  string $file  The filename
+     * @param  string $queue The queue
+     * @return stdClass        The decoded job
+     */
     protected function decodeFileFromQueue($file, $queue = null) {
         $fullJobPath = $this->getFullPathToQueueJob($file, $queue);
         $queueItem = json_decode(file_get_contents($fullJobPath));
         return $queueItem;
     }
 
+    /**
+     * Get the full path on disk to a job in the queue.
+     * @param  string $file  The filename
+     * @param  string $queue The queue
+     * @return string        The path
+     */
     protected function getFullPathToQueueJob($file, $queue = null) {
         $path = U::joinPaths($this->getQueueDirectory($queue), $file);
         return trim($path, '/');
     }
 
+    /**
+     * Get the base directory for a named queue.
+     * @param  string  $queue  The queue
+     * @param  boolean $create Create the directory
+     * @return string          The directory
+     */
     protected function getQueueDirectory($queue = null, $create = false)
     {
         $queue = $queue === null ? "default" : trim($queue);
@@ -207,6 +245,12 @@ class FileQueue extends \Illuminate\Queue\Queue
         return $path;
     }
 
+    /**
+     * Get the in process directory for a queue.
+     * @param  string  $queue  The queue
+     * @param  boolean $create Create the directory
+     * @return string          The directory
+     */
     protected function getInProcessQueueDirectory($queue = null, $create = false) {
         $path = U::joinPaths($this->getQueueDirectory($queue), "inprocess");
         if ($create && !\File::isDirectory($path)) {

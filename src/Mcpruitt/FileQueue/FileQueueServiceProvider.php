@@ -24,7 +24,11 @@ class FileQueueServiceProvider extends ServiceProvider
 
     }
 
-
+    /**
+     * Boot up the service provider.
+     *
+     * @return void
+     */
     public function boot()
     {
         \App::make('queue')->addConnector("file", function() {

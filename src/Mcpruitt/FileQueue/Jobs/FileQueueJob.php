@@ -22,6 +22,16 @@ class FileQueueJob extends Job
 
     protected $bubble_exceptions = false;
 
+    /**
+     * Create a new job
+     * @param Container $c           The application container
+     * @param string    $jobQueue    The queue
+     * @param string    $jobName     The Name
+     * @param array     $jobData     The ata
+     * @param integer   $dueDate     The due date
+     * @param string    $storagePath The path to save the job
+     * @param integer   $attempts    The number of attempts for the job
+     */
     public function __construct(Container $c, $jobQueue, $jobName, $jobData,
                                 $dueDate, $storagePath = null, $attempts = 0)
     {
@@ -34,16 +44,31 @@ class FileQueueJob extends Job
         $this->job_attempts = $attempts;
     }
 
+    /**
+     * Set the value indicating if this job should bubble exceptions.
+     * @param boolean $val Should exceptions bubble
+     */
     public function setBubbleExceptions($val )
     {
         $this->bubble_exceptions = $val;
     }
 
+    /**
+     * Should this job bubble exceptions.
+     *
+     * @return boolean True to bubble exceptions, false otherwise.
+     */
     public function getBubbleExceptions()
     {
         return $this->bubble_exceptions;
     }
 
+    /**
+     * Fire this job. If exceptions are set to not bubble this will cause the
+     * job to be relased with an increasing delay upon failure.
+     *
+     * @return void
+     */
     public function fire()
     {
         $this->job_attempts++;
@@ -127,6 +152,11 @@ class FileQueueJob extends Job
         return $this->job_attempts;
     }
 
+    /**
+     * Get the due date for this job.
+     *
+     * @return int The due date as a unix timestamp
+     */
     public function getDue()
     {
         return $this->due_date;
