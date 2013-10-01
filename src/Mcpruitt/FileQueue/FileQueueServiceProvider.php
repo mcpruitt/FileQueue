@@ -15,12 +15,14 @@ class FileQueueServiceProvider extends ServiceProvider {
 	/**
 	 * Register the service provider.
 	 *
+	 * @codeCoverageIgnore
 	 * @return void
 	 */
 	public function register()
 	{
 		
 	}
+
 
 	public function boot(){
 		\App::make('queue')->addConnector("file", function() {
@@ -31,6 +33,7 @@ class FileQueueServiceProvider extends ServiceProvider {
 	/**
 	 * Get the services provided by the provider.
 	 *
+	 * @codeCoverageIgnore
 	 * @return array
 	 */
 	public function provides()
