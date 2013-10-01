@@ -1,44 +1,45 @@
-<?php namespace Mcpruitt\FileQueue;
+<?php
+namespace Mcpruitt\FileQueue;
 
 use Illuminate\Support\ServiceProvider;
 use \Mcpruitt\FileQueue\Connectors\FileQueueConnector;
 
-class FileQueueServiceProvider extends ServiceProvider {
+class FileQueueServiceProvider extends ServiceProvider
+{
+    /**
+     * Indicates if loading of the provider is deferred.
+     *
+     * @var bool
+     */
+    protected $defer = false;
 
-	/**
-	 * Indicates if loading of the provider is deferred.
-	 *
-	 * @var bool
-	 */
-	protected $defer = false;
+    /**
+     * Register the service provider.
+     *
+     * @codeCoverageIgnore
+     * @return void
+     */
+    public function register()
+    {
 
-	/**
-	 * Register the service provider.
-	 *
-	 * @codeCoverageIgnore
-	 * @return void
-	 */
-	public function register()
-	{
-		
-	}
+    }
 
 
-	public function boot(){
-		\App::make('queue')->addConnector("file", function() {
-      return new FileQueueConnector();
-    });
-	}
+    public function boot()
+    {
+        \App::make('queue')->addConnector("file", function() {
+            return new FileQueueConnector();
+        });
+    }
 
-	/**
-	 * Get the services provided by the provider.
-	 *
-	 * @codeCoverageIgnore
-	 * @return array
-	 */
-	public function provides()
-	{
-		return array();
-	}
-
+    /**
+     * Get the services provided by the provider.
+     *
+     * @codeCoverageIgnore
+     * @return array
+     */
+    public function provides()
+    {
+        return array();
+    }
 }
