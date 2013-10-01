@@ -5,104 +5,130 @@ use \Mcpruitt\FileQueue\FileQueueUtil as U;
 use \Illuminate\Container\Container;
 use \Illuminate\Queue\Jobs\Job;
 
-class FileQueueJob extends Job {
+class FileQueueJob extends Job
+{
 
-  protected $job_name;
+    protected $job_name;
 
-  protected $job_data;
+    protected $job_data;
 
-  protected $queue_name;
+    protected $queue_name;
 
-  protected $due_date;
+    protected $due_date;
 
-  protected $job_attempts = 0;
+    protected $job_attempts = 0;
 
-  protected $storage_path;
+    protected $storage_path;
 
-  protected $bubble_exceptions = false;
+    protected $bubble_exceptions = false;
 
-  public function __construct(Container $c, $jobQueue, $jobName, $jobData, $dueDate, $storagePath = null, $attempts = 0) {
-    $this->container    = $c;
-    $this->job_name     = $jobName;
-    $this->job_data     = $jobData;
-    $this->queue_name   = $jobQueue;
-    $this->due_date     = $dueDate;
-    $this->storage_path = $storagePath;
-    $this->job_attempts = $attempts;
-  }
-
-  public function setBubbleExceptions($val ){
-    $this->bubble_exceptions = $val;
-  }
-
-  public function getBubbleExceptions(){ return $this->bubble_exceptions; }
-
-  public function fire() {
-    $this->job_attempts++;
-    try {
-      if ($this->job_name instanceof Closure) {
-        call_user_func($this->job_name, $this, $this->job_data);
-      } else {
-        $payload = array(
-          'job'  => $this->job_name, 
-          'data' => (array)$this->job_data
-        );
-        $this->resolveAndFire($payload);
-      }
-    } catch (\Exception $e) {
-      //\Log::info("Exception encountered during queued job processing. Placing job back in queue. Attempt number: {$this->job_attempts}.", array($e));
-      $this->release($this->job_attempts * $this->job_attempts);
-      if($this->bubble_exceptions) throw $e;
+    public function __construct(Container $c, $jobQueue, $jobName, $jobData,
+                                $dueDate, $storagePath = null, $attempts = 0)
+    {
+        $this->container        = $c;
+        $this->job_name         = $jobName;
+        $this->job_data         = $jobData;
+        $this->queue_name     = $jobQueue;
+        $this->due_date         = $dueDate;
+        $this->storage_path = $storagePath;
+        $this->job_attempts = $attempts;
     }
-  }
 
-  /**
-   * Delete the job from the queue.
-   * 
-   * @return void
-   */
-  public function delete(){
-    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts());
-    $previousId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);
+    public function setBubbleExceptions($val )
+    {
+        $this->bubble_exceptions = $val;
+    }
 
-    $inProcessPath = $this->storage_path;
-    
-    $currentPath = rtrim(U::joinPaths($inProcessPath, $id),'/');
-    if(\File::isFile($currentPath)) \File::delete($currentPath);
+    public function getBubbleExceptions()
+    {
+        return $this->bubble_exceptions;
+    }
 
-    $currentPath = rtrim(U::joinPaths($inProcessPath, $previousId),'/');
-    if(\File::isFile($currentPath)) \File::delete($currentPath);
-  }
+    public function fire()
+    {
+        $this->job_attempts++;
+        try {
+            if ($this->job_name instanceof Closure) {
+                call_user_func($this->job_name, $this, $this->job_data);
+            } else {
+                $payload = array(
+                    'job'    => $this->job_name,
+                    'data' => (array) $this->job_data
+                );
+                $this->resolveAndFire($payload);
+            }
+        } catch (\Exception $e) {
+            $this->release($this->job_attempts * $this->job_attempts);
+            if ($this->bubble_exceptions) {
+                throw $e;
+            }
+        }
+    }
 
-  /**
-   * Release the job back into the queue.
-   *
-   * @param  int   $delay The delay in seconds.
-   * @return void
-   */
-  public function release($delay = 0){
-    $startingId = U::getJobFilename($this->job_name, $this->due_date, $this->attempts() - 1);    
-    $inProcessPath = $this->storage_path;
-    $currentPath = rtrim(U::joinPaths($inProcessPath, $startingId),'/');
+    /**
+     * Delete the job from the queue.
+     *
+     * @return void
+     */
+    public function delete()
+    {
+        $id = U::getJobFilename($this->job_name, $this->due_date,
+                                $this->attempts());
 
-    $regularPath = substr($inProcessPath, 0, strlen($inProcessPath) - strlen("inprocess/"));
+        $previousId = U::getJobFilename($this->job_name, $this->due_date,
+                                        $this->attempts() - 1);
 
-    
+        $inProcessPath = $this->storage_path;
 
-    $this->due_date = microtime(true) + $delay;
-    $id = U::getJobFilename($this->job_name, $this->due_date, $this->attempts());
+        $currentPath = rtrim(U::joinPaths($inProcessPath, $id), '/');
+        if (\File::isFile($currentPath)) {
+            \File::delete($currentPath);
+        }
 
-    $outputPath = $regularPath . $id;
+        $currentPath = rtrim(U::joinPaths($inProcessPath, $previousId), '/');
+        if (\File::isFile($currentPath)) {
+            \File::delete($currentPath);
+        }
+    }
 
-    \File::move($currentPath, $outputPath);
-  }
+    /**
+     * Release the job back into the queue.
+     *
+     * @param    int     $delay The delay in seconds.
+     * @return void
+     */
+    public function release($delay = 0)
+    {
+        $startingId = U::getJobFilename($this->job_name,
+                                        $this->due_date, $this->attempts() - 1);
 
-  /**
-   * Get the number of times the job has been attempted.
-   *
-   * @return int
-   */
-  public function attempts() { return $this->job_attempts; }
+        $inProcessPath = $this->storage_path;
+        $currentPath = rtrim(U::joinPaths($inProcessPath, $startingId), '/');
 
-  public function getDue() { return $this->due_date; }
+        $offset = strlen($inProcessPath) - strlen("inprocess/");
+        $regularPath = substr($inProcessPath, 0, $offset);
+
+        $this->due_date = microtime(true) + $delay;
+        $id = U::getJobFilename($this->job_name, $this->due_date,
+                                $this->attempts());
+
+        $outputPath = $regularPath . $id;
+
+        \File::move($currentPath, $outputPath);
+    }
+
+    /**
+     * Get the number of times the job has been attempted.
+     *
+     * @return int
+     */
+    public function attempts()
+    {
+        return $this->job_attempts;
+    }
+
+    public function getDue()
+    {
+        return $this->due_date;
+    }
 }
