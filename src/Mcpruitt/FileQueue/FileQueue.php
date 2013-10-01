@@ -143,13 +143,8 @@ class FileQueue extends \Illuminate\Queue\Queue
     {
         $queue = $queue === null ? "default":$queue;
         $currentmicrotime = microtime(true);
-        $allfiles = scandir($this->getQueueDirectory($queue, true));
-        foreach ($allfiles as $index => $file) {
-            if (strlen($file) < 5 || substr($file, -5) !== ".json") {
-                unset($allfiles[$index]);
-            }
-        }
 
+        $allfiles = $this->getFilesForQueue($queue);
 
         foreach ($allfiles as $file) {
             preg_match($this->_jobNameRegex, $file, $matches);
@@ -160,26 +155,12 @@ class FileQueue extends \Illuminate\Queue\Queue
                 continue;
             }
 
-            $p = U::joinPaths($this->getQueueDirectory($queue), $file);
-            $fullJobPath = trim($p, '/');
-            $queueItem = json_decode(file_get_contents($fullJobPath));
+            $queueItem = $this->decodeFileFromQueue($file, $queue);
+            $this->moveFileToInProcessDirectory($file, $queue);
+            $inprocessDir = $this->getInProcessQueueDirectory($queue);
 
-            $job = $queueItem->job;
-            $data = $queueItem->data;
-
-            $processingDirectory
-              = U::joinPaths($this->getQueueDirectory($queue), "inprocess");
-
-            if (!\File::isDirectory($processingDirectory)) {
-                \File::makeDirectory($processingDirectory, 0777, true);
-            }
-
-            $inprocessFile
-              = rtrim(U::joinPaths($processingDirectory, $file), '/');
-
-            \File::move($fullJobPath, $inprocessFile);
-            $job = new FileQueueJob($this->container, $queue,
-                                    $job, $data, $due, $processingDirectory,
+            $job = new FileQueueJob($this->container, $queue, $queueItem->job,
+                                    $queueItem->data, $due, $inprocessDir,
                                     $attempts);
             $job->setBubbleExceptions($this->_bubbleExceptions);
             return $job;
@@ -187,10 +168,47 @@ class FileQueue extends \Illuminate\Queue\Queue
         return null;
     }
 
+    protected function getFilesForQueue($queue = null) {
+        $allfiles = scandir($this->getQueueDirectory($queue, true));
+        foreach ($allfiles as $index => $file) {
+            if (strlen($file) < 5 || substr($file, -5) !== ".json") {
+                unset($allfiles[$index]);
+            }
+        }
+        return $allfiles;
+    }
+
+    protected function moveFileToInProcessDirectory($file, $queue = null) {
+        $jobPath = $this->getFullPathToQueueJob($file, $queue);
+
+        $inProcessDir = $this->getInProcessQueueDirectory($queue, true);
+        $inprocessFile = trim(U::joinPaths($inProcessDir, $file));
+        \File::move($jobPath, $inprocessFile);
+    }
+
+    protected function decodeFileFromQueue($file, $queue = null) {
+        $fullJobPath = $this->getFullPathToQueueJob($file, $queue);
+        $queueItem = json_decode(file_get_contents($fullJobPath));
+        return $queueItem;
+    }
+
+    protected function getFullPathToQueueJob($file, $queue = null) {
+        $path = U::joinPaths($this->getQueueDirectory($queue), $file);
+        return trim($path, '/');
+    }
+
     protected function getQueueDirectory($queue = null, $create = false)
     {
         $queue = $queue === null ? "default" : trim($queue);
         $path = U::joinPaths($this->getBaseDirectory(), $queue);
+        if ($create && !\File::isDirectory($path)) {
+            \File::makeDirectory($path, 0770, true);
+        }
+        return $path;
+    }
+
+    protected function getInProcessQueueDirectory($queue = null, $create = false) {
+        $path = U::joinPaths($this->getQueueDirectory($queue), "inprocess");
         if ($create && !\File::isDirectory($path)) {
             \File::makeDirectory($path, 0770, true);
         }
