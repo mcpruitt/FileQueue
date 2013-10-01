@@ -122,7 +122,9 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
     $currentmicrotime = microtime(true);
     $allfiles = scandir($this->_getQueueDirectory($queue,true));
     foreach($allfiles as $index => $file) {
-      if(strlen($file) < 5 || substr($file, -5) !== ".json") unset($allfiles[$index]);
+      if(strlen($file) < 5 || substr($file, -5) !== ".json") {
+        unset($allfiles[$index]);
+      }
     }
     
 
@@ -131,7 +133,9 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
       $due = (float)$matches['jobdue'];
       $attempts = (int)$matches['jobattempts'];
 
-      if($due > $currentmicrotime) continue;
+      if($due > $currentmicrotime) {
+        continue;
+      }
 
       $fullJobPath = trim(U::joinPaths($this->_getQueueDirectory($queue), $file),'/');
       $queueItem = json_decode(file_get_contents($fullJobPath));
@@ -140,7 +144,9 @@ class FileQueue extends \Illuminate\Queue\Queue implements \Illuminate\Queue\Que
       $data = $queueItem->data;
         
       $processingDirectory = U::joinPaths($this->_getQueueDirectory($queue), "inprocess");
-      if(!\File::isDirectory($processingDirectory)) \File::makeDirectory($processingDirectory,0777, true);
+      if(!\File::isDirectory($processingDirectory)) {
+        \File::makeDirectory($processingDirectory,0777, true);
+      }
 
       $inprocessFile = rtrim(U::joinPaths($processingDirectory, $file),'/');
 

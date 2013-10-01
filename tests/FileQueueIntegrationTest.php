@@ -232,6 +232,7 @@ class FileQueueIntegrationTest extends TestCase {
       $exceptionThrown = true;
     }
     $this->assertTrue($exceptionThrown);
+    $this->assertSame($job->getBubbleExceptions(), $this->app['queue']->getBubbleExceptions());
   }
 
   private function fileCountInVfsDirectory($dir) {
