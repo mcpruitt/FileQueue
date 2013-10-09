@@ -27,7 +27,7 @@ After composer has installed FileQueue you will need to add the service provider
 
     'providers' => array(
       // Existing providers...
-      'Mcpruitt\Queue\QueueServiceProvider',
+      'Mcpruitt\FileQueue\FileQueueServiceProvider',
      )
 
 Finally you'll need to add the new queue to your `app/config/queue.php` and add a new entry to your `connections` array specifying the `file` driver.
