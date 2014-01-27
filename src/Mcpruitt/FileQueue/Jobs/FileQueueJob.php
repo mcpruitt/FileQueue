@@ -161,4 +161,9 @@ class FileQueueJob extends Job
     {
         return $this->due_date;
     }
+    
+	public function getRawBody()
+	{
+		//
+	}    
 }
