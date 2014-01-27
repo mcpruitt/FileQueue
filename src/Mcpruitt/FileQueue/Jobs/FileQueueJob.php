@@ -80,6 +80,8 @@ class FileQueueJob extends Job
                     'job'    => $this->job_name,
                     'data' => (array) $this->job_data
                 );
+                if (isset($payload['data']['data']))
+                	$payload['data']['data'] = (array) $payload['data']['data'];
                 $this->resolveAndFire($payload);
             }
         } catch (\Exception $e) {
