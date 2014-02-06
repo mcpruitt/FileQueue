@@ -258,4 +258,17 @@ class FileQueue extends \Illuminate\Queue\Queue
         }
         return $path;
     }
+    
+/**
+ * Push a raw payload onto the queue.
+ *
+ * @param  string  $payload
+ * @param  string  $queue
+ * @param  array   $options
+ * @return mixed
+ */
+public function pushRaw($payload, $queue = null, array $options = array())
+{
+	//
+}    
 }

@@ -11,9 +11,9 @@
     ],
     "require": {
         "php": ">=5.3.0",
-        "illuminate/support": "4.0.x",
-        "illuminate/queue": "4.0.x",
-        "illuminate/filesystem": "4.0.x"
+        "illuminate/support": "*",
+        "illuminate/queue": "*",
+        "illuminate/filesystem": "*"
     },
     "require-dev": {
         "orchestra/testbench": "2.0.*",
